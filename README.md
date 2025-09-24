@@ -1,4 +1,4 @@
-# Styxy Smart Contracts
+# Styxy Smart Contracts HardHat Project
 
 This repository contains the smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token and the deployment script for deploying and verifying the contract on Ethereum-based networks such as Sepolia.
 
