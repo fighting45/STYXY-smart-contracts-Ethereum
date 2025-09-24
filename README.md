@@ -1,6 +1,6 @@
-# Styxy Smart Contracts HardHat Project
+# Styxy Smart Contracts
 
-This repository contains the smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token and the deployment script for deploying and verifying the contract on Ethereum-based networks such as Sepolia.
+This repository contains Hardhat project having the smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token and the deployment script for deploying and verifying the contract on Ethereum-based networks such as Sepolia.
 
 ## Project Overview
 
@@ -16,18 +16,7 @@ This smart contract is based on the OpenZeppelin ERC-20 implementation, ensuring
 
 ### 1. **MyToken.sol**: The ERC-20 token contract
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-contract MyToken is ERC20 {
-    constructor(uint256 initialSupply) ERC20("Styxy", "STYXY") {
-        _mint(msg.sender, initialSupply);
-    }
-}
-```
+````solidity
 
 This contract inherits from OpenZeppelin’s `ERC20` contract. It mints an initial supply of tokens to the deployer's address.
 
@@ -53,7 +42,7 @@ Clone this repository to your local machine:
 ```bash
 git clone https://github.com/your-username/styxy-smart-contracts.git
 cd styxy-smart-contracts
-```
+````
 
 ### 2. Install dependencies
 
