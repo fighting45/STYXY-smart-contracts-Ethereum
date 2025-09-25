@@ -16,8 +16,6 @@ This smart contract is based on the OpenZeppelin ERC-20 implementation, ensuring
 
 ### 1. **MyToken.sol**: The ERC-20 token contract
 
-````solidity
-
 This contract inherits from OpenZeppelin’s `ERC20` contract. It mints an initial supply of tokens to the deployer's address.
 
 ### 2. **deploy.js**: Deployment Script
@@ -42,7 +40,7 @@ Clone this repository to your local machine:
 ```bash
 git clone https://github.com/your-username/styxy-smart-contracts.git
 cd styxy-smart-contracts
-````
+```
 
 ### 2. Install dependencies
 
