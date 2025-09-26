@@ -60,7 +60,7 @@ contract TokenStaking is ReentrancyGuard, Ownable{
     }
     function unStake(uint256 _amount) external nonReentrant {
         StakeInfo storage userStake = stakes[msg.sender];
-        require(userStake.amount >= 0, "Insufficient staked amounts");
+        require(userStake.amount >= _amount, "Insufficient staked amounts");
         require(
             block.timestamp >= userStake.stakeTime + lockupPeriod,
             "Funds are still in lockup period"
@@ -81,7 +81,7 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         uint256 rewards = userStake.pendingRewards;
 
         require(rewards > 0, "No rewards to claim");
-        require(rewardToken.balanceOf(address(this)) >=0, "Insufficient Reward Pool funds");
+        require(rewardToken.balanceOf(address(this)) >= rewards, "Insufficient Reward Pool funds");
 
         userStake.pendingRewards = 0;
         rewardPool -= rewards;
@@ -94,10 +94,10 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         StakeInfo storage userStake = stakes[_user];
         if(userStake.amount > 0){
             uint256 timeElapsed = block.timestamp - userStake.lastRewardTime;
-            uint256 earnedRewards = (userStake.amount * rewardRate * timeElapsed);
+            uint256 earnedRewards = (userStake.amount * rewardRate * timeElapsed)/1e18;
 
             userStake.pendingRewards += earnedRewards;
-            userStake.lastRewardTime += block.timestamp;
+            userStake.lastRewardTime = block.timestamp;
         }
     }
     function getStakeInfo(address _user) external view returns (
