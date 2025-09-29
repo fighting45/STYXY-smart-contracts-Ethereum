@@ -1,10 +1,10 @@
 # Styxy Smart Contracts
 
-This repository contains Hardhat project having the smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token and the deployment script for deploying and verifying the contract on Ethereum-based networks such as Sepolia.
+This repository is a Hardhat project comprising of smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token, STYXY staking contract and the deployment script for deploying and verifying the contracts on Ethereum-based networks such as local Hardhat network and Sepolia network.
 
 ## Project Overview
 
-- **Contract Name**: `MyToken`
+- **Contract Name**: `ERC20.sol`
 - **Token Name**: Styxy
 - **Token Symbol**: STYXY
 - **Token Standard**: ERC-20
@@ -14,9 +14,9 @@ This smart contract is based on the OpenZeppelin ERC-20 implementation, ensuring
 
 ## Files
 
-### 1. **MyToken.sol**: The ERC-20 token contract
+### 1. **contracts**
 
-This contract inherits from OpenZeppelin’s `ERC20` contract. It mints an initial supply of tokens to the deployer's address.
+This folder contains ERC-20, testERC-20 and staking contracts which inherit from OpenZeppelin’s `ERC20` contract.
 
 ### 2. **deploy.js**: Deployment Script
 
@@ -28,6 +28,10 @@ This script does the following:
 - Waits for the contract deployment to be mined.
 - Outputs the contract address, token details (name, symbol, total supply), and the owner's balance.
 - Provides the Hardhat verification command for verifying the contract on Etherscan.
+
+### 3. **test/staking.test.js**: Testing Script
+
+The rigorous testing script comprising of 41 tests cases, which tests all the read, write and ownerOnly modifier functions of the staking and ERC20 contracts.
 
 ## Setup
 
@@ -58,6 +62,7 @@ Create a `.env` file in the root directory and add your sensitive information (I
 INFURA_PROJECT_ID=your_infura_project_id
 PRIVATE_KEY=your_wallet_private_key
 ETHERSCAN_API_KEY=your_etherscan_api_key
+REPORT_GAS=true || false
 ```
 
 ### 4. Deploy the contract
@@ -78,6 +83,10 @@ After deployment, you can verify the contract on Etherscan using the following c
 npx hardhat verify --network sepolia CONTRACT_ADDRESS "1000000000000000000000000"
 ```
 
-## Testing the Contract
+## 6. Testing the Contracts
 
-To test the contract, you can interact with it using Hardhat's `ethers.js` or write custom test scripts under the `test` folder.
+To test the contract, you can interact with it using Hardhat's `ethers.js` by running the following command:
+
+```bash
+npx hardhat test
+```

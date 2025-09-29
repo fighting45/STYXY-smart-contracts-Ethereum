@@ -9,13 +9,17 @@ contract TokenStaking is ReentrancyGuard, Ownable{
     IERC20 public stakingToken;
     IERC20 public rewardToken;
 
-    uint256 public rewardRate;
+    uint256 public rewardRate; //APR in basis points (e.g 1000 = 10%)
     uint256 public lockupPeriod;
+    uint256 public constant SECONDS_PER_YEAR = 365 days;
+    uint256 public constant BASIS_POINTS = 10000;
+
     struct StakeInfo {
         uint256 amount;
         uint256 stakeTime;
         uint256 lastRewardTime;
         uint256 pendingRewards;
+        uint256 lastRewardRate;
     }
     mapping(address => StakeInfo) public stakes;
     uint256 public totalStaked;
@@ -24,17 +28,18 @@ contract TokenStaking is ReentrancyGuard, Ownable{
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 amount);
-    event RewardRateUpdated(uint256 newRate);
+    // event RewardRateUpdated(uint256 newRate);
+    event APRUpdated(uint256 newAPR);
 
     constructor(
         address _stakingToken,
         address _rewardToken,
-        uint256 _rewardRate,
+        uint256 _initialAPR,
         uint256 _lockupPeriod
     ) Ownable(msg.sender) {
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
-        rewardRate = _rewardRate;
+        rewardRate = _initialAPR;
         lockupPeriod = _lockupPeriod;
     }
     function stake(uint256 _amount) external nonReentrant {
@@ -52,6 +57,7 @@ contract TokenStaking is ReentrancyGuard, Ownable{
             //New Stake
             userStake.stakeTime = block.timestamp;
             userStake.lastRewardTime = block.timestamp;
+            userStake.lastRewardRate = rewardRate;
         }
         userStake.amount += _amount;
         totalStaked += _amount;
@@ -94,10 +100,10 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         StakeInfo storage userStake = stakes[_user];
         if(userStake.amount > 0){
             uint256 timeElapsed = block.timestamp - userStake.lastRewardTime;
-            uint256 earnedRewards = (userStake.amount * rewardRate * timeElapsed)/1e18;
-
+            uint256 earnedRewards = (userStake.amount * userStake.lastRewardRate * timeElapsed) / (SECONDS_PER_YEAR * BASIS_POINTS);
             userStake.pendingRewards += earnedRewards;
             userStake.lastRewardTime = block.timestamp;
+            userStake.lastRewardRate = rewardRate;
         }
     }
     function getStakeInfo(address _user) external view returns (
@@ -117,7 +123,7 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         //calculate current pending rewards
         if (userStake.amount > 0){
             uint256 timeElapsed = block.timestamp - userStake.lastRewardTime;
-            uint256 earnedRewards = (userStake.amount * rewardRate * timeElapsed);
+            uint256 earnedRewards = (userStake.amount * userStake.lastRewardRate * timeElapsed)/(SECONDS_PER_YEAR * BASIS_POINTS);
             pendingRewards = userStake.pendingRewards + earnedRewards ;
         }
         else {
@@ -125,11 +131,16 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         }
 
     }
-    function getAPR() external view returns (uint256){
-        if (totalStaked == 0) return 0;
-        uint256 yearlyRewards = rewardRate * 365 days;
-        return (yearlyRewards * 100) / 1e18; 
+      function updateAPR(uint256 _newAPR) external onlyOwner {
+        require(_newAPR <= 5000, "APR too high"); // Max 50% APR for safety
+        require(_newAPR >= 100, "APR too low");   // Min 1% APR
+        
+        rewardRate = _newAPR;
+        emit APRUpdated(_newAPR);
     }
+    function getAPR() external view returns (uint256){
+        return rewardRate / 100; 
+    }   
 
     //Owner Functions
 
@@ -138,10 +149,7 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         rewardToken.transferFrom(msg.sender, address(this), _amount);
         rewardPool += _amount;
     }
-    function setRewardRate(uint256 _newRate) external onlyOwner {
-        rewardRate = _newRate;
-        emit RewardRateUpdated(_newRate);
-    }
+  
     function setLockupPeriod(uint256 _newPeriod) external onlyOwner {
         lockupPeriod = _newPeriod;
     }
