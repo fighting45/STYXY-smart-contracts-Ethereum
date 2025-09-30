@@ -16,7 +16,7 @@ This smart contract is based on the OpenZeppelin ERC-20 implementation, ensuring
 
 ### 1. **contracts**
 
-This folder contains ERC-20, testERC-20 and staking contracts which inherit from OpenZeppelin’s `ERC20` contract.
+This folder contains ERC-20, testERC-20, staking and vesting contracts which inherit from OpenZeppelin’s `ERC20` contract.
 
 ### 2. **deploy.js**: Deployment Script
 
@@ -31,7 +31,7 @@ This script does the following:
 
 ### 3. **test/staking.test.js**: Testing Script
 
-The rigorous testing script comprising of 41 tests cases, which tests all the read, write and ownerOnly modifier functions of the staking and ERC20 contracts.
+The comprehensive testing scripts comprising of 100+ tests cases, for all the smart contracts including ERC 20, staking & vesting contracts which test all the read, write and ownerOnly modifier functions of the existing contracts.
 
 ## Setup
 

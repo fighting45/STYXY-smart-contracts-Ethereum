@@ -8,6 +8,9 @@ module.exports = {
     // Local Hardhat network
     hardhat: {
       chainId: 31337,
+      accounts: {
+        count: 30, // Provide 30 accounts for testing (more than the 22+ required)
+      },
       mining: {
         auto: true,
         interval: 1000,
