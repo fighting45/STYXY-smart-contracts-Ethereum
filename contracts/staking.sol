@@ -4,10 +4,12 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./StakingRewardNFT.sol";
 
 contract TokenStaking is ReentrancyGuard, Ownable{
     IERC20 public stakingToken;
     IERC20 public rewardToken;
+    StakingRewardNFT public rewardNFT;
 
     uint256 public rewardRate; //APR in basis points (e.g 1000 = 10%)
     uint256 public lockupPeriod;
@@ -27,6 +29,7 @@ contract TokenStaking is ReentrancyGuard, Ownable{
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
+    event NFTRewardMinted(address indexed user, uint256 tokenId);
     event RewardClaimed(address indexed user, uint256 amount);
     // event RewardRateUpdated(uint256 newRate);
     event APRUpdated(uint256 newAPR);
@@ -41,6 +44,12 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         rewardToken = IERC20(_rewardToken);
         rewardRate = _initialAPR;
         lockupPeriod = _lockupPeriod;
+
+        rewardNFT = new StakingRewardNFT(
+            "Staking Reward NFT",
+            "SRNFT",
+            address(this)
+        );
     }
     function stake(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount must be greater than '0'!");
@@ -77,6 +86,9 @@ contract TokenStaking is ReentrancyGuard, Ownable{
         totalStaked -= _amount;
 
         stakingToken.transfer(msg.sender, _amount);
+
+        uint256 nftTokenId = rewardNFT.mintReward(msg.sender);
+        emit NFTRewardMinted(msg.sender, nftTokenId);
 
         emit Unstaked(msg.sender, _amount);
     }

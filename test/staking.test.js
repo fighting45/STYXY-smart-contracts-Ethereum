@@ -6,6 +6,7 @@ describe("TokenStaking", function () {
   let stakingToken;
   let rewardToken;
   let owner, user1, user2, user3, user4;
+  let rewardNFT;
 
   // Helper function to increase time
   const increaseTime = async (seconds) => {
@@ -57,6 +58,12 @@ describe("TokenStaking", function () {
 
     // Add rewards to the pool
     await staking.connect(owner).addRewards(ethers.parseEther("1000"));
+
+    // Get the deployed NFT contract
+    rewardNFT = await ethers.getContractAt(
+      "StakingRewardNFT",
+      await staking.rewardNFT()
+    );
   });
 
   describe("Deployment", function () {
@@ -76,6 +83,21 @@ describe("TokenStaking", function () {
 
     it("Should set owner correctly", async function () {
       expect(await staking.owner()).to.equal(owner.address);
+    });
+
+    it("Should deploy NFT contract with correct parameters", async function () {
+      const nftAddress = await staking.rewardNFT();
+      expect(nftAddress).to.not.equal(ethers.ZeroAddress);
+      expect(await rewardNFT.name()).to.equal("Staking Reward NFT");
+      expect(await rewardNFT.symbol()).to.equal("SRNFT");
+    });
+
+    it("Should set staking contract as NFT owner", async function () {
+      expect(await rewardNFT.owner()).to.equal(await staking.getAddress());
+    });
+
+    it("Should initialize NFT with zero minted tokens", async function () {
+      expect(await rewardNFT.totalMinted()).to.equal(0);
     });
   });
 
@@ -367,6 +389,182 @@ describe("TokenStaking", function () {
       // Final unstake
       await staking.connect(user1).unStake(ethers.parseEther("500"));
       expect((await staking.getStakeInfo(user1.address)).amount).to.equal(0);
+    });
+  });
+
+  describe("NFT Reward Minting", function () {
+    it("Should mint exactly one NFT to the caller on unstake", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+
+      await expect(staking.connect(user1).unStake(stakeAmount))
+        .to.emit(staking, "NFTRewardMinted")
+        .withArgs(user1.address, 1n);
+
+      expect(await rewardNFT.ownerOf(1n)).to.equal(user1.address);
+      expect(await rewardNFT.totalMinted()).to.equal(1n);
+    });
+
+    it("Should increment token IDs across multiple unstakes by same user", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+
+      // First unstake
+      await staking.connect(user1).unStake(ethers.parseEther("300"));
+      expect(await rewardNFT.ownerOf(1n)).to.equal(user1.address);
+
+      // Second unstake
+      await staking.connect(user1).unStake(ethers.parseEther("200"));
+      expect(await rewardNFT.ownerOf(2n)).to.equal(user1.address);
+
+      // Third unstake
+      await staking.connect(user1).unStake(ethers.parseEther("500"));
+      expect(await rewardNFT.ownerOf(3n)).to.equal(user1.address);
+
+      expect(await rewardNFT.totalMinted()).to.equal(3n);
+    });
+
+    it("Should mint NFTs to different users with sequential token IDs", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      // User1 stakes and unstakes
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+      await staking.connect(user1).unStake(stakeAmount);
+
+      // User2 stakes and unstakes
+      await stakingToken
+        .connect(user2)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user2).stake(stakeAmount);
+      await increaseTime(7 * 24 * 60 * 60 + 1); // Already past lockup
+      await staking.connect(user2).unStake(stakeAmount);
+
+      // User3 stakes and unstakes
+      await stakingToken
+        .connect(user3)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user3).stake(stakeAmount);
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+      await staking.connect(user3).unStake(stakeAmount);
+
+      // Verify ownership
+      expect(await rewardNFT.ownerOf(1n)).to.equal(user1.address);
+      expect(await rewardNFT.ownerOf(2n)).to.equal(user2.address);
+      expect(await rewardNFT.ownerOf(3n)).to.equal(user3.address);
+      expect(await rewardNFT.totalMinted()).to.equal(3n);
+    });
+
+    it("Should mint NFT regardless of unstake amount", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+
+      // Unstake very small amount
+      await expect(staking.connect(user1).unStake(ethers.parseEther("0.001")))
+        .to.emit(staking, "NFTRewardMinted")
+        .withArgs(user1.address, 1n);
+
+      expect(await rewardNFT.totalMinted()).to.equal(1n);
+    });
+
+    it("Should emit NFTRewardMinted event with correct parameters", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+
+      const tx = await staking.connect(user1).unStake(stakeAmount);
+      const receipt = await tx.wait();
+
+      // Find the NFTRewardMinted event
+      const event = receipt.logs.find((log) => {
+        try {
+          const parsed = staking.interface.parseLog(log);
+          return parsed.name === "NFTRewardMinted";
+        } catch {
+          return false;
+        }
+      });
+
+      expect(event).to.not.be.undefined;
+      const parsedEvent = staking.interface.parseLog(event);
+      expect(parsedEvent.args.user).to.equal(user1.address);
+      expect(parsedEvent.args.tokenId).to.equal(1n);
+    });
+
+    it("Should mint NFT after token transfer completes", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      await increaseTime(7 * 24 * 60 * 60 + 1);
+
+      const initialBalance = await stakingToken.balanceOf(user1.address);
+      await staking.connect(user1).unStake(stakeAmount);
+      const finalBalance = await stakingToken.balanceOf(user1.address);
+
+      // Verify both token transfer and NFT minting succeeded
+      expect(finalBalance - initialBalance).to.equal(stakeAmount);
+      expect(await rewardNFT.ownerOf(1n)).to.equal(user1.address);
+    });
+
+    it("Should not affect ERC20 reward calculation when minting NFT", async function () {
+      const stakeAmount = ethers.parseEther("1000");
+
+      await stakingToken
+        .connect(user1)
+        .approve(await staking.getAddress(), stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      await increaseTime(365 * 24 * 60 * 60); // 1 year
+
+      // Get pending rewards before unstake
+      const stakeInfoBefore = await staking.getStakeInfo(user1.address);
+      const pendingBefore = stakeInfoBefore.pendingRewards;
+
+      await increaseTime(7 * 24 * 60 * 60 + 1); // Pass lockup
+      await staking.connect(user1).unStake(stakeAmount);
+
+      // Get pending rewards after unstake
+      const stakeInfoAfter = await staking.getStakeInfo(user1.address);
+      const pendingAfter = stakeInfoAfter.pendingRewards;
+
+      // Verify NFT was minted
+      expect(await rewardNFT.totalMinted()).to.equal(1n);
+
+      // Verify ERC20 rewards are still claimable
+      expect(pendingAfter).to.be.gt(pendingBefore);
+      await staking.connect(user1).claimRewards();
+      const rewardBalance = await rewardToken.balanceOf(user1.address);
+      expect(rewardBalance).to.be.gt(0);
     });
   });
 

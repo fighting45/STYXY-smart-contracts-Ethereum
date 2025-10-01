@@ -1,6 +1,6 @@
 # Styxy Smart Contracts
 
-This repository is a Hardhat project comprising of smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token, STYXY staking contract and the deployment script for deploying and verifying the contracts on Ethereum-based networks such as local Hardhat network and Sepolia network.
+This repository is a Hardhat project comprising of smart contracts for the **Styxy Token** (STYXY). It includes the contract implementation for an ERC-20 token, NFT contract (for staking rewards), STYXY staking contract and the deployment script for deploying and verifying the contracts on Ethereum-based networks such as local Hardhat network or Sepolia network.
 
 ## Project Overview
 
@@ -24,14 +24,14 @@ The deployment script uses Hardhat's built-in functionality to deploy the contra
 
 This script does the following:
 
-- Deploys the contract with an initial supply of 1,000,000 STYXY tokens.
+- Deploys the ERC20 contract with an initial supply of 1,000,000 STYXY tokens.
 - Waits for the contract deployment to be mined.
 - Outputs the contract address, token details (name, symbol, total supply), and the owner's balance.
 - Provides the Hardhat verification command for verifying the contract on Etherscan.
 
 ### 3. **test/staking.test.js**: Testing Script
 
-The comprehensive testing scripts comprising of 100+ tests cases, for all the smart contracts including ERC 20, staking & vesting contracts which test all the read, write and ownerOnly modifier functions of the existing contracts.
+The comprehensive testing scripts comprising of 120+ tests cases, for all the smart contracts including ERC 20, NFT, staking & vesting contracts which test all the read, write and ownerOnly modifier functions of the existing contracts.
 
 ## Setup
 
@@ -65,9 +65,9 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 REPORT_GAS=true || false
 ```
 
-### 4. Deploy the contract
+### 4. Deploy the contracts
 
-To deploy the contract to the Sepolia testnet, run the following command:
+To deploy the contracts to the Sepolia testnet, run the following command:
 
 ```bash
 npx hardhat run scripts/deploy.js --network sepolia
@@ -85,7 +85,7 @@ npx hardhat verify --network sepolia CONTRACT_ADDRESS "1000000000000000000000000
 
 ## 6. Testing the Contracts
 
-To test the contract, you can interact with it using Hardhat's `ethers.js` by running the following command:
+To test the contracts, you can interact with it using Hardhat's `ethers.js` by running the following command:
 
 ```bash
 npx hardhat test
